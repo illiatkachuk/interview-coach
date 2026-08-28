@@ -1,18 +1,18 @@
-"""Конфігурація: завантаження .env та значення за замовчуванням."""
+"""Configuration: .env loading and default values."""
 
 import os
 from pathlib import Path
 
 DEFAULT_MODEL = "claude-opus-4-8"
 DEFAULT_DB_PATH = Path.home() / ".interview-coach" / "history.db"
-DEFAULT_LANG = "uk"
+DEFAULT_LANG = "en"
 RUN_TIMEOUT_SECONDS = 15
 
 
 def load_dotenv(path: Path | None = None) -> None:
-    """Читає KEY=VALUE з .env у os.environ, не перезаписуючи наявні змінні.
+    """Reads KEY=VALUE pairs from .env into os.environ without overwriting existing variables.
 
-    Шукає .env у поточній директорії, якщо шлях не передано явно.
+    Looks for .env in the current directory if no path is given explicitly.
     """
     env_path = path if path is not None else Path.cwd() / ".env"
     if not env_path.is_file():
@@ -29,6 +29,6 @@ def load_dotenv(path: Path | None = None) -> None:
 
 
 def db_path() -> Path:
-    """Шлях до бази: INTERVIEW_COACH_DB або ~/.interview-coach/history.db."""
+    """Path to the database: INTERVIEW_COACH_DB or ~/.interview-coach/history.db."""
     override = os.environ.get("INTERVIEW_COACH_DB")
     return Path(override) if override else DEFAULT_DB_PATH

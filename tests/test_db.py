@@ -1,16 +1,16 @@
-"""Тести шару зберігання (SQLite)."""
+"""Tests for the storage layer (SQLite)."""
 
 from interview_coach.db import Database
 
 
 def test_add_and_get_problem(db):
-    pid = db.add_problem("dynamic-programming", "medium", "Coin Change", "Знайдіть...")
+    pid = db.add_problem("dynamic-programming", "medium", "Coin Change", "Find...")
     problem = db.get_problem(pid)
     assert problem["id"] == pid
     assert problem["topic"] == "dynamic-programming"
     assert problem["difficulty"] == "medium"
     assert problem["title"] == "Coin Change"
-    assert problem["statement"] == "Знайдіть..."
+    assert problem["statement"] == "Find..."
     assert problem["created_at"]
 
 
@@ -37,7 +37,7 @@ def test_add_and_list_attempts(db):
         False,
         verdict="correct",
         score=9,
-        feedback="Гарний розв'язок",
+        feedback="Good solution",
     )
     attempts = db.list_attempts()
     assert len(attempts) == 1

@@ -1,8 +1,8 @@
-"""Wire-level інтеграційні тести: справжній SDK + httpx.MockTransport.
+"""Wire-level integration tests: real SDK + httpx.MockTransport.
 
-Перевіряють, що наші параметри (output_config, thinking) серіалізуються
-реальним SDK і що ми правильно парсимо реальну відповідь Messages API.
-Мережа не потрібна.
+Verify that our parameters (output_config, thinking) are serialized
+correctly by the real SDK and that we correctly parse a real Messages API
+response. No network access required.
 """
 
 import json
@@ -12,8 +12,8 @@ import httpx
 
 from interview_coach import llm
 
-PROBLEM_PAYLOAD = {"title": "Мінімальні монети", "statement": "# Умова\n..."}
-FEEDBACK_PAYLOAD = {"verdict": "correct", "score": 9, "feedback": "Гарне ДП."}
+PROBLEM_PAYLOAD = {"title": "Minimum Coins", "statement": "# Statement\n..."}
+FEEDBACK_PAYLOAD = {"verdict": "correct", "score": 9, "feedback": "Good DP."}
 
 
 def _make_client(captured: list) -> anthropic.Anthropic:
@@ -64,7 +64,7 @@ def test_review_solution_over_the_wire():
     captured = []
     client = _make_client(captured)
     fb = llm.review_solution(
-        problem_statement="Умова",
+        problem_statement="Statement",
         solution_code="print(3)",
         run_stdout="3\n",
         run_stderr="",
@@ -74,5 +74,5 @@ def test_review_solution_over_the_wire():
     )
     assert fb.verdict == "correct"
     assert fb.score == 9
-    assert fb.feedback == "Гарне ДП."
+    assert fb.feedback == "Good DP."
     assert "print(3)" in captured[0]["messages"][0]["content"]

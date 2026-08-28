@@ -1,3 +1,3 @@
-"""interview-coach — CLI-тренажер для технічних співбесід."""
+"""interview-coach — a CLI and web trainer for technical interviews."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

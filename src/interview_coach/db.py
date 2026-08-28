@@ -1,4 +1,4 @@
-"""Історія задач і спроб у SQLite."""
+"""Problem and attempt history stored in SQLite."""
 
 import sqlite3
 from datetime import datetime, timezone
@@ -36,7 +36,7 @@ def _now() -> str:
 
 
 class Database:
-    """Тонка обгортка над sqlite3 для problems/attempts."""
+    """Thin wrapper around sqlite3 for problems/attempts."""
 
     def __init__(self, path: Path | str):
         self.path = Path(path)

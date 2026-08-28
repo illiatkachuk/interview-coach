@@ -1,4 +1,4 @@
-"""Тести LLM-шару з моком Anthropic-клієнта."""
+"""Tests for the LLM layer with a mocked Anthropic client."""
 
 import pytest
 
@@ -7,9 +7,9 @@ from conftest import fake_client
 
 
 def test_generate_problem_parses_response():
-    client = fake_client([{"title": "Coin Change", "statement": "# Умова\n..."}])
+    client = fake_client([{"title": "Coin Change", "statement": "# Statement\n..."}])
     problem = llm.generate_problem("dynamic-programming", client=client)
-    assert problem == {"title": "Coin Change", "statement": "# Умова\n..."}
+    assert problem == {"title": "Coin Change", "statement": "# Statement\n..."}
 
 
 def test_generate_problem_request_shape():
@@ -25,18 +25,18 @@ def test_generate_problem_request_shape():
     assert "English" in call["system"]
 
 
-def test_generate_problem_default_language_is_ukrainian():
+def test_generate_problem_default_language_is_english():
     client = fake_client([{"title": "T", "statement": "S"}])
     llm.generate_problem("dp", client=client)
-    assert "Ukrainian" in client.messages.calls[0]["system"]
+    assert "English" in client.messages.calls[0]["system"]
 
 
 def test_review_solution_returns_feedback():
     client = fake_client(
-        [{"verdict": "correct", "score": 9, "feedback": "Молодець"}]
+        [{"verdict": "correct", "score": 9, "feedback": "Well done"}]
     )
     fb = llm.review_solution(
-        problem_statement="Умова",
+        problem_statement="Statement",
         solution_code="print(42)",
         run_stdout="42\n",
         run_stderr="",
@@ -46,7 +46,7 @@ def test_review_solution_returns_feedback():
     )
     assert fb.verdict == "correct"
     assert fb.score == 9
-    assert fb.feedback == "Молодець"
+    assert fb.feedback == "Well done"
 
 
 def test_review_solution_prompt_includes_context():
@@ -70,7 +70,7 @@ def test_review_solution_prompt_includes_context():
 
 def test_refusal_raises_llm_error():
     client = fake_client([{"title": "T", "statement": "S"}], stop_reason="refusal")
-    with pytest.raises(llm.LLMError, match="відмовилася"):
+    with pytest.raises(llm.LLMError, match="refused"):
         llm.generate_problem("dp", client=client)
 
 
@@ -81,7 +81,7 @@ def test_invalid_json_raises_llm_error():
         def create(self, **kwargs):
             return SimpleNamespace(
                 stop_reason="end_turn",
-                content=[SimpleNamespace(type="text", text="не json")],
+                content=[SimpleNamespace(type="text", text="not json")],
             )
 
     client = SimpleNamespace(messages=BrokenMessages())
@@ -111,5 +111,5 @@ def test_api_error_wrapped(monkeypatch):
     from types import SimpleNamespace
 
     client = SimpleNamespace(messages=FailingMessages())
-    with pytest.raises(llm.LLMError, match="не вдався"):
+    with pytest.raises(llm.LLMError, match="failed"):
         llm.generate_problem("dp", client=client)

@@ -1,4 +1,4 @@
-"""Робота з Anthropic API: генерація задач і фідбек на розв'язки."""
+"""Anthropic API integration: problem generation and solution feedback."""
 
 import json
 from dataclasses import dataclass
@@ -55,7 +55,7 @@ FEEDBACK_SCHEMA = {
 
 
 class LLMError(RuntimeError):
-    """Помилка при зверненні до Anthropic API."""
+    """Error while calling the Anthropic API."""
 
 
 @dataclass
@@ -70,7 +70,7 @@ def _language(lang: str) -> str:
 
 
 def _structured_request(client: anthropic.Anthropic, system: str, prompt: str, schema: dict) -> dict:
-    """Один запит до Claude зі структурованою JSON-відповіддю."""
+    """A single request to Claude with a structured JSON response."""
     try:
         response = client.messages.create(
             model=DEFAULT_MODEL,
@@ -81,28 +81,28 @@ def _structured_request(client: anthropic.Anthropic, system: str, prompt: str, s
             output_config={"format": {"type": "json_schema", "schema": schema}},
         )
     except anthropic.APIError as exc:
-        raise LLMError(f"Запит до Anthropic API не вдався: {exc}") from exc
+        raise LLMError(f"Anthropic API request failed: {exc}") from exc
     except TypeError as exc:
-        # SDK кидає TypeError, коли не знайдено жодного способу автентифікації.
+        # The SDK raises TypeError when no authentication method is found.
         if "authentication" in str(exc).lower():
             raise LLMError(
-                "Не знайдено облікових даних Anthropic. Додайте ANTHROPIC_API_KEY "
-                "у .env (див. .env.example) або в змінні оточення."
+                "No Anthropic credentials found. Add ANTHROPIC_API_KEY "
+                "to .env (see .env.example) or to your environment variables."
             ) from exc
         raise
 
     if response.stop_reason == "refusal":
-        raise LLMError("Модель відмовилася відповідати на цей запит.")
+        raise LLMError("The model refused to respond to this request.")
     if response.stop_reason == "max_tokens":
-        raise LLMError("Відповідь обрізано за лімітом токенів — спробуйте ще раз.")
+        raise LLMError("The response was truncated due to the token limit — try again.")
 
     text = next((b.text for b in response.content if b.type == "text"), None)
     if text is None:
-        raise LLMError("У відповіді моделі немає текстового блоку.")
+        raise LLMError("The model's response has no text block.")
     try:
         return json.loads(text)
     except json.JSONDecodeError as exc:
-        raise LLMError(f"Не вдалося розпарсити JSON із відповіді моделі: {exc}") from exc
+        raise LLMError(f"Failed to parse JSON from the model's response: {exc}") from exc
 
 
 def generate_problem(
@@ -111,7 +111,7 @@ def generate_problem(
     lang: str = DEFAULT_LANG,
     client: anthropic.Anthropic | None = None,
 ) -> dict:
-    """Генерує задачу для співбесіди за темою. Повертає {"title", "statement"}."""
+    """Generates an interview problem on a topic. Returns {"title", "statement"}."""
     client = client or anthropic.Anthropic()
     system = (
         "You are a senior software engineer preparing coding-interview problems. "
@@ -142,7 +142,7 @@ def review_solution(
     lang: str = DEFAULT_LANG,
     client: anthropic.Anthropic | None = None,
 ) -> Feedback:
-    """Просить Claude оцінити розв'язок; повертає Feedback(verdict, score, feedback)."""
+    """Asks Claude to evaluate a solution; returns Feedback(verdict, score, feedback)."""
     client = client or anthropic.Anthropic()
     system = (
         "You are an experienced technical interviewer reviewing a candidate's "
@@ -150,8 +150,8 @@ def review_solution(
     )
     run_summary = (
         f"exit code: {exit_code}, timed out: {timed_out}\n"
-        f"--- stdout ---\n{run_stdout or '(порожньо)'}\n"
-        f"--- stderr ---\n{run_stderr or '(порожньо)'}"
+        f"--- stdout ---\n{run_stdout or '(empty)'}\n"
+        f"--- stderr ---\n{run_stderr or '(empty)'}"
     )
     prompt = (
         "## Problem\n"

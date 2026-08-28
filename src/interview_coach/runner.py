@@ -1,4 +1,4 @@
-"""Запуск розв'язку користувача в окремому процесі."""
+"""Runs the user's solution in a separate process."""
 
 import subprocess
 import sys
@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .config import RUN_TIMEOUT_SECONDS
 
-# Обрізаємо вивід, щоб не роздувати БД і промпт для фідбеку.
+# Truncate output so it doesn't bloat the DB or the feedback prompt.
 MAX_OUTPUT_CHARS = 20_000
 
 
@@ -26,14 +26,14 @@ class RunResult:
 def _truncate(text: str) -> str:
     if len(text) <= MAX_OUTPUT_CHARS:
         return text
-    return text[:MAX_OUTPUT_CHARS] + "\n... [вивід обрізано]"
+    return text[:MAX_OUTPUT_CHARS] + "\n... [output truncated]"
 
 
 def run_solution(path: Path | str, timeout: int = RUN_TIMEOUT_SECONDS) -> RunResult:
-    """Виконує python-файл поточним інтерпретатором і збирає вивід."""
+    """Runs a Python file with the current interpreter and collects its output."""
     path = Path(path)
     if not path.is_file():
-        raise FileNotFoundError(f"Файл розв'язку не знайдено: {path}")
+        raise FileNotFoundError(f"Solution file not found: {path}")
     try:
         proc = subprocess.run(
             [sys.executable, str(path)],
@@ -50,7 +50,7 @@ def run_solution(path: Path | str, timeout: int = RUN_TIMEOUT_SECONDS) -> RunRes
             stderr = stderr.decode(errors="replace")
         return RunResult(
             stdout=_truncate(stdout),
-            stderr=_truncate(stderr + f"\n[перервано: перевищено ліміт {timeout} c]"),
+            stderr=_truncate(stderr + f"\n[interrupted: exceeded the {timeout}s limit]"),
             exit_code=-1,
             timed_out=True,
         )

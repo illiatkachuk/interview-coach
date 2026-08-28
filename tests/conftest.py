@@ -1,4 +1,4 @@
-"""Спільні фікстури: тимчасова БД і мок Anthropic-клієнта."""
+"""Shared fixtures: temporary DB and a mocked Anthropic client."""
 
 import json
 from types import SimpleNamespace
@@ -15,7 +15,7 @@ def db(tmp_path):
 
 
 class FakeMessages:
-    """Мок client.messages: повертає заготовлені JSON-відповіді по черзі."""
+    """Mock of client.messages: returns pre-baked JSON responses in order."""
 
     def __init__(self, payloads, stop_reason="end_turn"):
         self._payloads = list(payloads)
@@ -33,5 +33,5 @@ class FakeMessages:
 
 
 def fake_client(payloads, stop_reason="end_turn"):
-    """Створює об'єкт із інтерфейсом anthropic.Anthropic().messages.create."""
+    """Creates an object with the anthropic.Anthropic().messages.create interface."""
     return SimpleNamespace(messages=FakeMessages(payloads, stop_reason=stop_reason))

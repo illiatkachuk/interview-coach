@@ -1,4 +1,4 @@
-"""Тести запуску розв'язків."""
+"""Tests for running solutions."""
 
 import pytest
 
@@ -32,7 +32,7 @@ def test_timeout(tmp_path):
     result = run_solution(script, timeout=1)
     assert result.timed_out
     assert not result.ok
-    assert "перервано" in result.stderr
+    assert "interrupted" in result.stderr
 
 
 def test_missing_file_raises(tmp_path):
@@ -46,4 +46,4 @@ def test_output_truncated(tmp_path):
     result = run_solution(script)
     assert result.ok
     assert len(result.stdout) < MAX_OUTPUT_CHARS + 100
-    assert "обрізано" in result.stdout
+    assert "truncated" in result.stdout

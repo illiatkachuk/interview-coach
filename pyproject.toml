@@ -4,13 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "interview-coach"
-version = "0.1.0"
-description = "CLI-тренажер для технічних співбесід на базі Anthropic API"
+version = "0.2.0"
+description = "CLI and web trainer for technical interviews powered by the Anthropic API"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "anthropic>=0.60",
     "click>=8.1",
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
 ]
 
 [project.optional-dependencies]
@@ -23,6 +25,9 @@ interview-coach = "interview_coach.cli:cli"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+interview_coach = ["static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

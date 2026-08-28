@@ -1,4 +1,4 @@
-"""CLI-команди interview-coach (click)."""
+"""interview-coach CLI commands (click)."""
 
 import sys
 from pathlib import Path
@@ -11,15 +11,15 @@ from .db import Database
 from .runner import run_solution
 
 _VERDICT_LABELS = {
-    "correct": "✅ правильно",
-    "partially_correct": "🟡 частково правильно",
-    "incorrect": "❌ неправильно",
+    "correct": "✅ correct",
+    "partially_correct": "🟡 partially correct",
+    "incorrect": "❌ incorrect",
 }
 
 
 @click.group()
 def cli():
-    """interview-coach — тренажер для технічних співбесід."""
+    """interview-coach — a trainer for technical interviews."""
     load_dotenv()
 
 
@@ -35,18 +35,18 @@ def _open_db() -> Database:
     type=click.Choice(["easy", "medium", "hard"]),
     default="medium",
     show_default=True,
-    help="Складність задачі.",
+    help="Problem difficulty.",
 )
 @click.option(
     "--lang",
     "-l",
     default=DEFAULT_LANG,
     show_default=True,
-    help="Мова умови задачі (uk/en).",
+    help="Problem statement language (uk/en).",
 )
 def new(topic: str, difficulty: str, lang: str):
-    """Згенерувати нову задачу за темою (напр. dynamic-programming)."""
-    click.echo(f"Генерую задачу з теми «{topic}» ({difficulty})…")
+    """Generate a new problem on a topic (e.g. dynamic-programming)."""
+    click.echo(f'Generating a problem on topic "{topic}" ({difficulty})…')
     try:
         problem = llm.generate_problem(topic, difficulty=difficulty, lang=lang)
     except llm.LLMError as exc:
@@ -56,12 +56,12 @@ def new(topic: str, difficulty: str, lang: str):
         problem_id = db.add_problem(topic, difficulty, problem["title"], problem["statement"])
 
     click.echo()
-    click.secho(f"Задача #{problem_id}: {problem['title']}", bold=True)
+    click.secho(f"Problem #{problem_id}: {problem['title']}", bold=True)
     click.echo()
     click.echo(problem["statement"])
     click.echo()
     click.echo(
-        f"Коли будете готові: interview-coach submit {problem_id} <ваш_файл.py>"
+        f"When ready: interview-coach submit {problem_id} <your_file.py>"
     )
 
 
@@ -75,29 +75,29 @@ def new(topic: str, difficulty: str, lang: str):
     type=int,
     default=RUN_TIMEOUT_SECONDS,
     show_default=True,
-    help="Ліміт часу виконання розв'язку, секунд.",
+    help="Solution execution time limit, in seconds.",
 )
 @click.option(
     "--lang",
     "-l",
     default=DEFAULT_LANG,
     show_default=True,
-    help="Мова фідбеку (uk/en).",
+    help="Feedback language (uk/en).",
 )
 def submit(problem_id: int, solution_file: Path, timeout: int, lang: str):
-    """Здати розв'язок: запустити файл і отримати фідбек від Claude."""
+    """Submit a solution: run the file and get feedback from Claude."""
     with _open_db() as db:
         problem = db.get_problem(problem_id)
         if problem is None:
-            raise click.ClickException(f"Задачі #{problem_id} не існує.")
+            raise click.ClickException(f"Problem #{problem_id} does not exist.")
 
-        click.echo(f"Запускаю {solution_file}…")
+        click.echo(f"Running {solution_file}…")
         result = run_solution(solution_file, timeout=timeout)
 
         if result.timed_out:
-            click.secho("⏱ Розв'язок перервано за таймаутом.", fg="yellow")
+            click.secho("⏱ Solution was interrupted by timeout.", fg="yellow")
         elif result.exit_code != 0:
-            click.secho(f"Розв'язок завершився з кодом {result.exit_code}.", fg="yellow")
+            click.secho(f"Solution exited with code {result.exit_code}.", fg="yellow")
         if result.stdout.strip():
             click.echo("--- stdout ---")
             click.echo(result.stdout.rstrip())
@@ -106,7 +106,7 @@ def submit(problem_id: int, solution_file: Path, timeout: int, lang: str):
             click.echo(result.stderr.rstrip())
 
         click.echo()
-        click.echo("Запитую фідбек у Claude…")
+        click.echo("Requesting feedback from Claude…")
         solution_code = solution_file.read_text(encoding="utf-8")
         try:
             fb = llm.review_solution(
@@ -119,7 +119,7 @@ def submit(problem_id: int, solution_file: Path, timeout: int, lang: str):
                 lang=lang,
             )
         except llm.LLMError as exc:
-            # Спробу все одно зберігаємо — без фідбеку.
+            # Save the attempt anyway — without feedback.
             db.add_attempt(
                 problem_id,
                 str(solution_file),
@@ -133,7 +133,7 @@ def submit(problem_id: int, solution_file: Path, timeout: int, lang: str):
                 feedback=None,
             )
             raise click.ClickException(
-                f"{exc}\nСпробу збережено в історії без фідбеку."
+                f"{exc}\nThe attempt was saved to history without feedback."
             )
 
         attempt_id = db.add_attempt(
@@ -151,25 +151,25 @@ def submit(problem_id: int, solution_file: Path, timeout: int, lang: str):
 
     click.echo()
     verdict_label = _VERDICT_LABELS.get(fb.verdict, fb.verdict)
-    click.secho(f"Спроба #{attempt_id}: {verdict_label}, оцінка {fb.score}/10", bold=True)
+    click.secho(f"Attempt #{attempt_id}: {verdict_label}, score {fb.score}/10", bold=True)
     click.echo()
     click.echo(fb.feedback)
 
 
 @cli.command()
 @click.option("--problem", "-p", "problem_id", type=int, default=None,
-              help="Показати спроби лише для однієї задачі.")
+              help="Show attempts for a single problem only.")
 def history(problem_id: int | None):
-    """Показати історію задач і спроб."""
+    """Show the history of problems and attempts."""
     with _open_db() as db:
         problems = db.list_problems()
         attempts = db.list_attempts(problem_id)
 
     if problem_id is None:
         if not problems:
-            click.echo("Історія порожня. Почніть з: interview-coach new <тема>")
+            click.echo("History is empty. Start with: interview-coach new <topic>")
             return
-        click.secho("Задачі:", bold=True)
+        click.secho("Problems:", bold=True)
         for p in problems:
             click.echo(
                 f"  #{p['id']} [{p['topic']}/{p['difficulty']}] {p['title']} ({p['created_at']})"
@@ -177,33 +177,44 @@ def history(problem_id: int | None):
         click.echo()
 
     if attempts:
-        click.secho("Спроби:", bold=True)
+        click.secho("Attempts:", bold=True)
         for a in attempts:
-            verdict = _VERDICT_LABELS.get(a["verdict"], a["verdict"] or "без фідбеку")
+            verdict = _VERDICT_LABELS.get(a["verdict"], a["verdict"] or "no feedback")
             score = f"{a['score']}/10" if a["score"] is not None else "—"
             click.echo(
-                f"  #{a['id']} → задача #{a['problem_id']} «{a['problem_title']}»:"
+                f"  #{a['id']} → problem #{a['problem_id']} \"{a['problem_title']}\":"
                 f" {verdict}, {score} ({a['created_at']})"
             )
     elif problem_id is not None:
-        click.echo(f"Для задачі #{problem_id} спроб ще немає.")
+        click.echo(f"No attempts yet for problem #{problem_id}.")
 
 
 @cli.command()
 @click.argument("problem_id", type=int)
 def show(problem_id: int):
-    """Показати умову збереженої задачі."""
+    """Show the statement of a saved problem."""
     with _open_db() as db:
         problem = db.get_problem(problem_id)
     if problem is None:
-        raise click.ClickException(f"Задачі #{problem_id} не існує.")
+        raise click.ClickException(f"Problem #{problem_id} does not exist.")
     click.secho(
-        f"Задача #{problem['id']} [{problem['topic']}/{problem['difficulty']}]:"
+        f"Problem #{problem['id']} [{problem['topic']}/{problem['difficulty']}]:"
         f" {problem['title']}",
         bold=True,
     )
     click.echo()
     click.echo(problem["statement"])
+
+
+@cli.command()
+@click.option("--host", default="127.0.0.1", show_default=True, help="Interface to bind.")
+@click.option("--port", default=8000, show_default=True, type=int, help="Port to listen on.")
+def web(host: str, port: int):
+    """Start the web app (browser UI + REST API)."""
+    import uvicorn
+
+    click.echo(f"interview-coach web app: http://{host}:{port}")
+    uvicorn.run("interview_coach.webapp:app", host=host, port=port)
 
 
 def main() -> None:
